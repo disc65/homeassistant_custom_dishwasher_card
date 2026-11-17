@@ -3,32 +3,58 @@ const VERSION = "0.4.2";
 // x-release-please-end
 
 const SUFFIXES = {
-  connectivity: ["_connectivity"],
-  remoteStart: ["_remote_start"],
+  connectivity: ["_connectivity", "_connection"],
+  remoteStart: ["_remote_start", "_remote_start_allowed"],
   door: ["_door"],
   operation: ["_operation_state"],
-  finish: ["_program_finish_time"],
+  finish: ["_program_finish_time", "_expected_finish_time"],
+  remainingTime: ["_remaining_program_time"],
   progress: ["_program_progress"],
   activeProgram: ["_active_program"],
   selectedProgram: ["_selected_program"],
-  delay: ["_start_in_relative"],
+  delay: ["_start_in_relative", "_start_in"],
   halfLoad: ["_half_load"],
-  hygiene: ["_hygiene"],
+  hygiene: ["_hygiene", "_hygiene_plus"],
   intensiveZone: ["_intensive_zone"],
   power: ["_power"],
   silence: ["_silence", "_silence_on_demand"],
-  varioSpeed: ["_vario_speed"],
-  stop: ["_stop_program"],
+  varioSpeed: ["_vario_speed_plus", "_vario_speed"],
+  extraDry: ["_extra_dry_option", "_extra_dry"],
+  stop: ["_stop_program", "_abort"],
+  startButton: ["_start_program", "_start"],
+  salt: ["_salt"],
+  rinseAid: ["_rinse_aid"],
+  machineCareRemainingRuns: ["_machinecare_remaining_runs"],
+  machineCare: ["_machine_care"],
+  smartFilter: ["_smart_filter_cleaning"],
+  machineCareFilter: ["_machinecare_and_filter"],
+  checkFilter: ["_check_filter_system"],
+  heaterCalcified: ["_water_heater_calcified"],
+};
+
+// Keys whose suffix alone is ambiguous (e.g. "_start" vs. "_remote_start") are
+// only matched within the given domain.
+const DOMAINS = {
+  startButton: "button.",
 };
 
 const DEFAULT_PROGRAMS = {
-  dishcare_dishwasher_program_intensiv_70: "Intensiv 70 °C",
+  favorite_001: "Favorite",
+  dishcare_dishwasher_program_auto2: "Auto",
+  dishcare_dishwasher_program_eco50: "Eco 50°",
+  dishcare_dishwasher_program_intensiv70: "Intensive 70°",
+  dishcare_dishwasher_program_machinecare: "Machine Care",
+  dishcare_dishwasher_program_prerinse: "Pre Rinse",
+  dishcare_dishwasher_program_quick65: "Quick 65°",
+
+  // Legacy Home Connect identifiers.
   dishcare_dishwasher_program_auto_2: "Auto",
-  dishcare_dishwasher_program_eco_50: "Eco 50 °C",
-  dishcare_dishwasher_program_quick_45: "Schnell 45 °C",
-  dishcare_dishwasher_program_pre_rinse: "Vorspülen",
-  dishcare_dishwasher_program_quick_65: "Schnell 65 °C",
-  dishcare_dishwasher_program_machine_care: "Maschinenpflege",
+  dishcare_dishwasher_program_eco_50: "Eco 50°",
+  dishcare_dishwasher_program_intensiv_70: "Intensive 70°",
+  dishcare_dishwasher_program_machine_care: "Machine Care",
+  dishcare_dishwasher_program_pre_rinse: "Pre Rinse",
+  dishcare_dishwasher_program_quick_45: "Quick 45°",
+  dishcare_dishwasher_program_quick_65: "Quick 65°",
 };
 
 const TEXT = {
@@ -51,6 +77,19 @@ const TEXT = {
     active: "Aktiv",
     off: "Aus",
     powerOn: "Einschalten",
+    start: "Programm starten",
+    starting: "Programm wird gestartet …",
+    selecting: "Programm wird ausgewählt …",
+    startOffline: "Der Geschirrspüler ist nicht verbunden.",
+    startPower: "Schalte den Geschirrspüler zuerst ein.",
+    startRemote: "Aktiviere den Fernstart am Geschirrspüler.",
+    startDoor: "Schließe die Tür und warte auf die Bestätigung.",
+    startState: "Der Geschirrspüler ist noch nicht startbereit.",
+    startProgram: "Wähle ein verfügbares Programm.",
+    startEntity: "Das ausgewählte Programm ist in der Entität „Aktives Programm“ nicht verfügbar.",
+    startButton: "Der Geschirrspüler meldet den Start-Knopf noch nicht als verfügbar.",
+    commandFailed: "Die Anfrage ist fehlgeschlagen. Prüfe den Gerätestatus.",
+    commandTimeout: "Die Anfrage wurde noch nicht bestätigt. Prüfe den Gerätestatus, bevor du es erneut versuchst.",
     stop: "Programm stoppen",
     confirm: "Laufendes Programm wirklich stoppen?",
     noProgram: "Kein Programm gewählt",
@@ -69,6 +108,24 @@ const TEXT = {
     hygiene: "Hygiene+",
     halfLoad: "Halbe Beladung",
     silence: "Silence on Demand",
+    extraDry: "Extra Dry",
+    maintenance: "Wartung",
+    remaining: "Restzeit",
+    machineCareRuns: "Spülgänge bis Machine Care",
+    refillSoon: "Bald nachfüllen",
+    refillNeeded: "Nachfüllen",
+    ok: "OK",
+    cleanFilter: "Filter reinigen",
+    maintenanceNeeded: "Wartung erforderlich",
+    checkFilter: "Filter prüfen",
+    descale: "Entkalken",
+    salt: "Salz",
+    rinseAid: "Klarspüler",
+    smartFilter: "Smart Filter",
+    machineCare: "Machine Care",
+    machineCareFilter: "Machine Care & Filter",
+    filterSystem: "Filtersystem",
+    waterHeater: "Wassererhitzer",
   },
   en: {
     loading: "Loading dishwasher …",
@@ -89,6 +146,19 @@ const TEXT = {
     active: "Active",
     off: "Off",
     powerOn: "Power on",
+    start: "Start program",
+    starting: "Starting program …",
+    selecting: "Selecting program …",
+    startOffline: "The dishwasher is not connected.",
+    startPower: "Power on the dishwasher first.",
+    startRemote: "Enable remote start on the dishwasher.",
+    startDoor: "Close the door and wait for it to be reported closed.",
+    startState: "The dishwasher is not ready to start.",
+    startProgram: "Select an available program.",
+    startEntity: "The selected program is not available in the Active program entity.",
+    startButton: "The dishwasher does not report its Start button as available yet.",
+    commandFailed: "The request failed. Check the appliance state.",
+    commandTimeout: "The request has not been confirmed. Check the appliance state before trying again.",
     stop: "Stop program",
     confirm: "Really stop the running program?",
     noProgram: "No program selected",
@@ -107,6 +177,24 @@ const TEXT = {
     hygiene: "Hygiene+",
     halfLoad: "Half load",
     silence: "Silence on demand",
+    extraDry: "Extra Dry",
+    maintenance: "Maintenance",
+    remaining: "Remaining",
+    machineCareRuns: "Runs until Machine Care",
+    refillSoon: "Refill soon",
+    refillNeeded: "Refill needed",
+    ok: "OK",
+    cleanFilter: "Clean filter",
+    maintenanceNeeded: "Maintenance needed",
+    checkFilter: "Check filter",
+    descale: "Descaling needed",
+    salt: "Salt",
+    rinseAid: "Rinse Aid",
+    smartFilter: "Smart Filter",
+    machineCare: "Machine Care",
+    machineCareFilter: "Machine Care & Filter",
+    filterSystem: "Filter System",
+    waterHeater: "Water Heater",
   },
 };
 
@@ -119,6 +207,9 @@ class DishwasherCard extends HTMLElement {
     this._entities = null;
     this._discovering = false;
     this._signature = "";
+    this._pending = null;
+    this._commandTimer = null;
+    this._commandError = "";
   }
 
   static getStubConfig() {
@@ -129,11 +220,14 @@ class DishwasherCard extends HTMLElement {
     if (!config?.device_id && !config?.entities) {
       throw new Error("dishwasher-card requires device_id or entities");
     }
+    this._cancelCommand();
+    this._commandError = "";
     this._config = {
       title: "Geschirrspüler",
       show_program: true,
       show_delay: true,
       show_options: true,
+      show_maintenance: false,
       ...config,
     };
     this._entities = config.entities ? { ...config.entities } : null;
@@ -144,6 +238,7 @@ class DishwasherCard extends HTMLElement {
 
   set hass(hass) {
     this._hass = hass;
+    this._syncCommand();
     if (!this._entities && !this._discovering && this._config?.device_id) {
       void this._discover();
     }
@@ -155,6 +250,7 @@ class DishwasherCard extends HTMLElement {
   }
 
   getCardSize() { return 5; }
+  disconnectedCallback() { this._cancelCommand(); }
   getGridOptions() { return { columns: 12, min_columns: 6, rows: 5, min_rows: 4 }; }
 
   get _language() {
@@ -174,14 +270,16 @@ class DishwasherCard extends HTMLElement {
         .filter((entry) => {
           const device = entry.di || entry.device_id;
           const platform = entry.pl || entry.platform;
-          return device === this._config.device_id && (!platform || platform === "home_connect");
+          return device === this._config.device_id &&
+            (!platform || ["home_connect", "homeconnect_ws"].includes(platform));
         })
         .map((entry) => entry.ei || entry.entity_id)
         .filter(Boolean);
 
       this._entities = {};
       for (const [key, suffixes] of Object.entries(SUFFIXES)) {
-        const id = ids.find((candidate) => suffixes.some((suffix) => candidate.endsWith(suffix)));
+        const id = ids.find((candidate) => (!DOMAINS[key] || candidate.startsWith(DOMAINS[key])) &&
+          suffixes.some((suffix) => candidate.endsWith(suffix)));
         if (id) this._entities[key] = id;
       }
     } catch (error) {
@@ -218,6 +316,95 @@ class DishwasherCard extends HTMLElement {
   _operation() { return this._state("operation")?.state || "unknown"; }
   _running() { return ["run", "pause", "delayedstart", "aborting"].includes(this._operation()); }
 
+  _startReason() {
+    const t = this._text;
+    if (this._pending) return this._pending.kind === "start" ? t.starting : t.selecting;
+    if (this._entities?.connectivity && !this._on("connectivity")) return t.startOffline;
+    if (this._entities?.power && !this._on("power")) return t.startPower;
+    if (!["ready", "finished"].includes(this._operation())) return t.startState;
+    if (!this._on("remoteStart")) return t.startRemote;
+    // Home Connect reports an enum (closed/locked), Home Connect Local a door
+    // binary_sensor where "off" means closed.
+    if (!["closed", "locked", "off"].includes(this._state("door")?.state)) return t.startDoor;
+    const selected = this._state("selectedProgram");
+    if (!this._entities?.selectedProgram?.startsWith("select.") || !this._available("selectedProgram") ||
+        !Array.isArray(selected.attributes?.options) || !selected.attributes.options.includes(selected.state)) return t.startProgram;
+    // Home Connect Local starts the selected program with a dedicated button
+    // instead of writing the Active program select.
+    // A button that was never pressed reports "unknown"; only "unavailable" blocks it.
+    if (this._usesStartButton()) {
+      const button = this._state("startButton");
+      return button && button.state !== "unavailable" ? "" : t.startButton;
+    }
+    const active = this._state("activeProgram");
+    // An idle Active program may be unknown/none until a wash starts. Its actual
+    // options, not its current value, determine whether this request is supported.
+    if (!this._entities?.activeProgram?.startsWith("select.") || !active || active.state === "unavailable" ||
+        !Array.isArray(active.attributes?.options) || !active.attributes.options.includes(selected.state)) return t.startEntity;
+    return "";
+  }
+
+  _usesStartButton() { return Boolean(this._entities?.startButton?.startsWith("button.")); }
+
+  _startProgram() {
+    if (this._startReason()) return;
+    if (this._usesStartButton()) {
+      this._programRequest("start", this._entities.startButton, null, ["button", "press", { entity_id: this._entities.startButton }]);
+      return;
+    }
+    this._programRequest("start", this._entities.activeProgram, this._state("selectedProgram").state);
+  }
+
+  _selectProgram(option) {
+    if (this._pending || this._running() || !this._available("selectedProgram") ||
+        !this._entities.selectedProgram.startsWith("select.") ||
+        !Array.isArray(this._state("selectedProgram").attributes?.options) ||
+        !this._state("selectedProgram").attributes.options.includes(option)) return;
+    this._programRequest("select", this._entities.selectedProgram, option);
+  }
+
+  _programRequest(kind, entityId, option, call = ["select", "select_option", { entity_id: entityId, option }]) {
+    const request = { kind, entityId, option, button: call[0] === "button", acknowledged: false };
+    this._pending = request;
+    this._commandError = "";
+    this._commandTimer = setTimeout(() => this._finishCommand(request, this._text.commandTimeout), 35000);
+    this._commandTimer.unref?.();
+    this._render();
+    try {
+      // No automatic start on selection/power-on, no retries, and exactly one write.
+      const result = this._hass.callService(...call);
+      void Promise.resolve(result).then(() => {
+        if (this._pending !== request) return;
+        request.acknowledged = true;
+        this._syncCommand();
+      }, () => this._finishCommand(request, this._text.commandFailed));
+      this._syncCommand();
+    } catch {
+      this._finishCommand(request, this._text.commandFailed);
+    }
+  }
+
+  _syncCommand() {
+    const request = this._pending;
+    if (!request) return;
+    const reported = request.button || this._hass?.states?.[request.entityId]?.state === request.option;
+    const confirmed = request.kind === "start" ? reported && ["run", "delayedstart"].includes(this._operation()) : reported && request.acknowledged;
+    if (confirmed) this._finishCommand(request);
+  }
+
+  _finishCommand(request, error = "") {
+    if (this._pending !== request) return;
+    this._cancelCommand();
+    this._commandError = error;
+    this._render();
+  }
+
+  _cancelCommand() {
+    clearTimeout(this._commandTimer);
+    this._commandTimer = null;
+    this._pending = null;
+  }
+
   _progress() {
     const value = Number(this._state("progress")?.state);
     return Number.isFinite(value) ? Math.max(0, Math.min(100, value)) : null;
@@ -237,11 +424,37 @@ class DishwasherCard extends HTMLElement {
     return names[value] || value.replace(/^dishcare_dishwasher_program_/, "").replaceAll("_", " ");
   }
 
+  _durationSeconds(key) {
+    const state = this._state(key);
+    const value = Number(state?.state);
+    if (!Number.isFinite(value)) return null;
+    const unit = String(state?.attributes?.unit_of_measurement || "s").toLowerCase();
+    if (unit === "h" || unit === "hr" || unit === "hour" || unit === "hours") return value * 3600;
+    if (unit === "min" || unit === "minute" || unit === "minutes") return value * 60;
+    return value;
+  }
+
+  _remaining() {
+    const seconds = this._durationSeconds("remainingTime");
+    if (seconds === null || seconds < 0) return "";
+    const rounded = Math.round(seconds / 60);
+    const hours = Math.floor(rounded / 60);
+    const minutes = rounded % 60;
+    return hours ? `${hours} h ${String(minutes).padStart(2, "0")} min` : `${minutes} min`;
+  }
+
   _finish() {
     const value = this._state("finish")?.state;
-    if (!value || ["unknown", "unavailable", "none"].includes(value)) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
+    let date = null;
+    if (value && !["unknown", "unavailable", "none"].includes(value)) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) date = parsed;
+    }
+    if (!date) {
+      const seconds = this._durationSeconds("remainingTime");
+      if (seconds !== null && seconds >= 0) date = new Date(Date.now() + seconds * 1000);
+    }
+    if (!date) return "";
     return date.toLocaleTimeString(this._language === "de" ? "de-CH" : "en-GB", {
       hour: "2-digit",
       minute: "2-digit",
@@ -249,10 +462,31 @@ class DishwasherCard extends HTMLElement {
   }
 
   _door() {
-    const state = this._state("door")?.state;
-    if (state === "open") return { label: this._text.open, icon: "mdi:door-open", tone: "warning" };
+    const state = String(this._state("door")?.state || "").toLowerCase();
+    if (["open", "ajar", "on"].includes(state)) return { label: this._text.open, icon: "mdi:door-open", tone: "warning" };
     if (state === "locked") return { label: this._text.locked, icon: "mdi:door-closed-lock", tone: "good" };
     return { label: this._text.closed, icon: "mdi:door-closed", tone: "muted" };
+  }
+
+  _maintenanceStatus(key) {
+    const state = String(this._state(key)?.state || "").toLowerCase();
+    if (!state || ["unknown", "unavailable", "none"].includes(state)) return null;
+    if (key === "salt" || key === "rinseAid") {
+      if (state === "empty") return { label: this._text.refillNeeded, tone: "bad" };
+      if (state === "nearly_empty") return { label: this._text.refillSoon, tone: "warning" };
+      return { label: this._text.ok, tone: "good" };
+    }
+    if (["on", "present", "confirmed", "true"].includes(state)) {
+      const labels = {
+        smartFilter: this._text.cleanFilter,
+        machineCare: this._text.maintenanceNeeded,
+        machineCareFilter: this._text.maintenanceNeeded,
+        checkFilter: this._text.checkFilter,
+        heaterCalcified: this._text.descale,
+      };
+      return { label: labels[key] || this._text.maintenanceNeeded, tone: "warning" };
+    }
+    return { label: this._text.ok, tone: "good" };
   }
 
   _escape(value) {
@@ -283,6 +517,7 @@ class DishwasherCard extends HTMLElement {
     const offset = circumference * (1 - percentage / 100);
     const program = this._program();
     const finish = this._finish();
+    const remaining = this._remaining();
     const door = this._door();
     const online = this._on("connectivity");
     const remote = this._on("remoteStart");
@@ -305,6 +540,7 @@ class DishwasherCard extends HTMLElement {
             <div class="program">${this._escape(this._programLabel(program))}</div>
             <div class="facts">
               ${finish ? `<div><ha-icon icon="mdi:clock-check-outline"></ha-icon><span><small>${t.finish}</small>${this._escape(finish)}</span></div>` : ""}
+              ${remaining ? `<div><ha-icon icon="mdi:timer-sand"></ha-icon><span><small>${t.remaining}</small>${this._escape(remaining)}</span></div>` : ""}
               ${this._state("door") ? `<div><ha-icon icon="${door.icon}"></ha-icon><span><small>${t.program}</small>${this._escape(door.label)}</span></div>` : ""}
             </div>
           </div>
@@ -316,6 +552,7 @@ class DishwasherCard extends HTMLElement {
         ${this._programControl(running)}
         ${this._delayControl(running)}
         ${this._optionControls()}
+        ${this._maintenance()}
         ${this._actions()}
       </div>
     `);
@@ -328,12 +565,13 @@ class DishwasherCard extends HTMLElement {
     const options = state.attributes?.options || [];
     if (!options.length) return "";
     const html = options.map((value) => `<option value="${this._escape(value)}" ${value === state.state ? "selected" : ""}>${this._escape(this._programLabel(value))}</option>`).join("");
-    return `<section><label><ha-icon icon="mdi:playlist-check"></ha-icon>${this._text.program}</label><div class="select"><select id="program" ${running ? "disabled" : ""}>${html}</select><ha-icon icon="mdi:chevron-down"></ha-icon></div></section>`;
+    return `<section><label><ha-icon icon="mdi:playlist-check"></ha-icon>${this._text.program}</label><div class="select"><select id="program" ${running || this._pending ? "disabled" : ""}>${html}</select><ha-icon icon="mdi:chevron-down"></ha-icon></div></section>`;
   }
 
   _delayControl(running) {
     if (!this._config.show_delay || !this._available("delay") || running) return "";
-    return `<section><label><ha-icon icon="mdi:clock-start"></ha-icon>${this._text.delay}</label><div class="segments"><button data-delay="0">${this._text.now}</button><button data-delay="3600">+1 h</button><button data-delay="10800">+3 h</button></div></section>`;
+    const disabled = this._pending ? "disabled" : "";
+    return `<section><label><ha-icon icon="mdi:clock-start"></ha-icon>${this._text.delay}</label><div class="segments"><button data-delay="0" ${disabled}>${this._text.now}</button><button data-delay="3600" ${disabled}>+1 h</button><button data-delay="10800" ${disabled}>+3 h</button></div></section>`;
   }
 
   _optionControls() {
@@ -344,22 +582,54 @@ class DishwasherCard extends HTMLElement {
       ["hygiene", this._text.hygiene, "mdi:shield-check-outline"],
       ["halfLoad", this._text.halfLoad, "mdi:circle-half-full"],
       ["silence", this._text.silence, "mdi:volume-off"],
+      ["extraDry", this._text.extraDry, "mdi:weather-sunny"],
     ];
     const buttons = definitions
       .filter(([key]) => this._available(key))
       .map(([key, label, icon]) => {
         const active = this._on(key);
-        return `<button class="option ${active ? "active" : ""}" data-toggle="${key}"><ha-icon icon="${icon}"></ha-icon><span><b>${this._escape(label)}</b><small>${active ? this._text.active : this._text.off}</small></span></button>`;
+        return `<button class="option ${active ? "active" : ""}" data-toggle="${key}" ${this._pending ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon><span><b>${this._escape(label)}</b><small>${active ? this._text.active : this._text.off}</small></span></button>`;
       })
       .join("");
     return buttons ? `<section><label><ha-icon icon="mdi:tune-variant"></ha-icon>${this._text.options}</label><div class="options">${buttons}</div></section>` : "";
   }
 
+  _maintenance() {
+    if (!this._config.show_maintenance) return "";
+    const definitions = [
+      ["salt", this._text.salt, "mdi:shaker-outline"],
+      ["rinseAid", this._text.rinseAid, "mdi:bottle-tonic-outline"],
+      ["smartFilter", this._text.smartFilter, "mdi:filter-outline"],
+      ["machineCare", this._text.machineCare, "mdi:dishwasher-alert"],
+      ["machineCareFilter", this._text.machineCareFilter, "mdi:wrench-clock"],
+      ["checkFilter", this._text.filterSystem, "mdi:filter-alert-outline"],
+      ["heaterCalcified", this._text.waterHeater, "mdi:kettle-alert-outline"],
+    ];
+    const rows = definitions
+      .filter(([key]) => this._available(key))
+      .map(([key, label, icon]) => {
+        const status = this._maintenanceStatus(key);
+        if (!status) return "";
+        return `<button class="maintenance-item ${status.tone}" data-info="${key}"><ha-icon icon="${icon}"></ha-icon><span><b>${this._escape(label)}</b><small>${this._escape(status.label)}</small></span></button>`;
+      })
+      .join("");
+    const remainingRuns = this._available("machineCareRemainingRuns")
+      ? `<button class="maintenance-item" data-info="machineCareRemainingRuns"><ha-icon icon="mdi:counter"></ha-icon><span><b>${this._text.machineCareRuns}</b><small>${this._escape(this._state("machineCareRemainingRuns").state)}</small></span></button>`
+      : "";
+    return rows || remainingRuns
+      ? `<section><label><ha-icon icon="mdi:tools"></ha-icon>${this._text.maintenance}</label><div class="maintenance">${rows}${remainingRuns}</div></section>`
+      : "";
+  }
+
   _actions() {
+    if (this._pending) return `<footer><button class="action primary" disabled aria-busy="true"><ha-icon icon="mdi:progress-clock"></ha-icon>${this._pending.kind === "start" ? this._text.starting : this._text.selecting}</button></footer>`;
     const power = this._available("power") && !this._on("power");
     const stop = Boolean(this._state("stop")) && this._running();
-    if (!power && !stop) return "";
-    return `<footer>${power ? `<button class="action primary" data-action="power"><ha-icon icon="mdi:power"></ha-icon>${this._text.powerOn}</button>` : ""}${stop ? `<button class="action danger" data-action="stop"><ha-icon icon="mdi:stop-circle-outline"></ha-icon>${this._text.stop}</button>` : ""}</footer>`;
+    const start = !power && !this._running() && Boolean(this._entities?.selectedProgram || this._entities?.activeProgram);
+    const reason = start ? this._startReason() : "";
+    const error = this._commandError ? `<p class="error action-notice" role="alert">${this._escape(this._commandError)}</p>` : "";
+    if (!power && !stop && !start) return error;
+    return `<footer>${power ? `<button class="action primary" data-action="power"><ha-icon icon="mdi:power"></ha-icon>${this._text.powerOn}</button>` : ""}${start ? `<button class="action primary" data-action="start" ${reason ? 'disabled aria-describedby="start-reason"' : ""}><ha-icon icon="mdi:play"></ha-icon>${this._text.start}</button>` : ""}${stop ? `<button class="action danger" data-action="stop"><ha-icon icon="mdi:stop-circle-outline"></ha-icon>${this._text.stop}</button>` : ""}</footer>${reason ? `<p id="start-reason" class="action-notice muted" role="status">${this._escape(reason)}</p>` : ""}${error}`;
   }
 
   _bind() {
@@ -367,10 +637,11 @@ class DishwasherCard extends HTMLElement {
     this.shadowRoot.querySelectorAll("[data-toggle]").forEach((element) => element.addEventListener("click", () => this._service("homeassistant", "toggle", { entity_id: this._entities[element.dataset.toggle] })));
     this.shadowRoot.querySelectorAll("[data-delay]").forEach((element) => element.addEventListener("click", () => this._service("number", "set_value", { entity_id: this._entities.delay, value: Number(element.dataset.delay) })));
     this.shadowRoot.querySelector('[data-action="power"]')?.addEventListener("click", () => this._service("switch", "turn_on", { entity_id: this._entities.power }));
+    this.shadowRoot.querySelector('[data-action="start"]')?.addEventListener("click", () => this._startProgram());
     this.shadowRoot.querySelector('[data-action="stop"]')?.addEventListener("click", () => {
       if (globalThis.confirm(this._text.confirm)) this._service("button", "press", { entity_id: this._entities.stop });
     });
-    this.shadowRoot.getElementById("program")?.addEventListener("change", (event) => this._service("select", "select_option", { entity_id: this._entities.selectedProgram, option: event.target.value }));
+    this.shadowRoot.getElementById("program")?.addEventListener("change", (event) => this._selectProgram(event.target.value));
   }
 
   _moreInfo(key) {
@@ -380,6 +651,7 @@ class DishwasherCard extends HTMLElement {
   }
 
   async _service(domain, service, data) {
+    if (this._pending) return;
     try {
       await this._hass.callService(domain, service, data);
     } catch (error) {
@@ -391,7 +663,8 @@ class DishwasherCard extends HTMLElement {
     return `<style>
       :host{display:block;container-type:inline-size}ha-card{overflow:hidden}.card{padding:20px;color:var(--primary-text-color)}header{display:flex;justify-content:space-between;gap:16px;margin-bottom:12px}.title{font-size:1.25rem;font-weight:700}.subtitle,.program{color:var(--secondary-text-color);margin-top:3px}.status,.pill{border:0;border-radius:999px;background:var(--secondary-background-color);padding:7px 10px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:inherit;white-space:nowrap}.status span{width:7px;height:7px;border-radius:50%;background:currentColor}.good{color:var(--success-color,#43a047)}.bad{color:var(--error-color,#db4437)}.warning{color:var(--warning-color,#f9a825)}.muted{color:var(--secondary-text-color)}
       .hero{display:grid;grid-template-columns:170px 1fr;align-items:center;gap:20px;padding:4px 0 16px}.visual{width:160px;height:160px;position:relative;display:grid;place-items:center;margin:auto}.visual svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}circle{fill:none;stroke-width:8}.track{stroke:var(--divider-color)}.value{stroke:var(--accent);stroke-linecap:round;transition:stroke-dashoffset .4s}.machine{width:84px;height:84px;border-radius:26px;display:grid;place-items:center;background:var(--secondary-background-color);color:var(--accent);position:relative;box-shadow:inset 0 0 0 1px var(--divider-color)}.machine ha-icon{--mdc-icon-size:52px}.running .machine{animation:pulse 2s ease-in-out infinite}.machine i{position:absolute;border:2px solid var(--accent);border-radius:50%;opacity:0;animation:bubble 2.4s ease-in-out infinite}.b1{width:8px;height:8px;left:18px;bottom:15px}.b2{width:5px;height:5px;left:40px;bottom:10px;animation-delay:.7s!important}.b3{width:10px;height:10px;right:17px;bottom:17px;animation-delay:1.3s!important}.percent{position:absolute;bottom:-2px;background:var(--ha-card-background,var(--card-background-color));padding:2px 8px;border-radius:99px;display:flex;gap:4px;align-items:baseline}.percent small{color:var(--secondary-text-color)}.operation{font-size:1.7rem;font-weight:750}.operation.run{color:var(--success-color,#43a047)}.operation.pause,.operation.delayedstart{color:var(--warning-color,#f9a825)}.operation.error{color:var(--error-color,#db4437)}.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px}.facts>div{display:flex;gap:8px;align-items:center}.facts ha-icon,section>label ha-icon{color:var(--accent)}.facts span{display:flex;flex-direction:column}.facts small{color:var(--secondary-text-color)}
-      .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}.pill ha-icon{--mdc-icon-size:17px}section{border-top:1px solid var(--divider-color);padding-top:14px;margin-top:14px}section>label{display:flex;align-items:center;gap:7px;color:var(--secondary-text-color);font-size:.8rem;font-weight:650;margin-bottom:9px}.select{position:relative}.select select{width:100%;appearance:none;border:1px solid var(--divider-color);border-radius:12px;padding:12px 42px 12px 13px;background:var(--secondary-background-color);color:var(--primary-text-color)}.select>ha-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}.segments{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.segments button,.option{border:1px solid var(--divider-color);border-radius:11px;background:var(--secondary-background-color);color:inherit;cursor:pointer}.segments button{padding:9px}.options{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.option{padding:11px;display:flex;align-items:center;gap:10px;text-align:left}.option span{display:flex;flex-direction:column}.option small{color:var(--secondary-text-color);margin-top:2px}.option.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--secondary-background-color))}.option.active ha-icon{color:var(--accent)}footer{display:flex;gap:9px;margin-top:18px}.action{flex:1;border:0;border-radius:12px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;cursor:pointer}.primary{background:var(--accent);color:var(--text-primary-color,#fff)}.danger{background:color-mix(in srgb,var(--error-color,#db4437) 14%,var(--secondary-background-color));color:var(--error-color,#db4437)}.message{min-height:120px;padding:24px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--secondary-text-color)}.error{color:var(--error-color,#db4437)}.spinner{width:24px;height:24px;border:3px solid var(--divider-color);border-top-color:var(--primary-color);border-radius:50%;animation:spin .8s linear infinite}
+      .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}.pill ha-icon{--mdc-icon-size:17px}section{border-top:1px solid var(--divider-color);padding-top:14px;margin-top:14px}section>label{display:flex;align-items:center;gap:7px;color:var(--secondary-text-color);font-size:.8rem;font-weight:650;margin-bottom:9px}.select{position:relative}.select select{width:100%;appearance:none;border:1px solid var(--divider-color);border-radius:12px;padding:12px 42px 12px 13px;background:var(--secondary-background-color);color:var(--primary-text-color)}.select>ha-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none}.segments{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.segments button,.option{border:1px solid var(--divider-color);border-radius:11px;background:var(--secondary-background-color);color:inherit;cursor:pointer}.segments button{padding:9px}.options,.maintenance{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.option,.maintenance-item{border:1px solid var(--divider-color);border-radius:11px;background:var(--secondary-background-color);color:inherit;cursor:pointer;padding:11px;display:flex;align-items:center;gap:10px;text-align:left}.maintenance-item span{display:flex;flex-direction:column}.maintenance-item small{color:var(--secondary-text-color);margin-top:2px}.option{padding:11px;display:flex;align-items:center;gap:10px;text-align:left}.option span{display:flex;flex-direction:column}.option small{color:var(--secondary-text-color);margin-top:2px}.option.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--secondary-background-color))}.option.active ha-icon{color:var(--accent)}footer{display:flex;gap:9px;margin-top:18px}.action{flex:1;border:0;border-radius:12px;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:700;cursor:pointer}.primary{background:var(--accent);color:var(--text-primary-color,#fff)}.danger{background:color-mix(in srgb,var(--error-color,#db4437) 14%,var(--secondary-background-color));color:var(--error-color,#db4437)}.message{min-height:120px;padding:24px;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--secondary-text-color)}.error{color:var(--error-color,#db4437)}.spinner{width:24px;height:24px;border:3px solid var(--divider-color);border-top-color:var(--primary-color);border-radius:50%;animation:spin .8s linear infinite}
+      button:disabled,select:disabled{cursor:default;opacity:.55}.action[aria-busy=true]{opacity:1}.action-notice{font-size:.8rem;line-height:1.5;margin:10px 0 0}
       @keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{transform:scale(1.04)}}@keyframes bubble{0%{transform:translateY(0) scale(.6);opacity:0}25%{opacity:.8}100%{transform:translateY(-48px) scale(1.15);opacity:0}}
       @container(max-width:430px){.card{padding:16px}.hero{grid-template-columns:1fr;gap:8px}.visual{width:145px;height:145px}.summary{text-align:center}.operation{font-size:1.45rem}.facts{justify-content:center}.pills{justify-content:center}}@container(max-width:320px){.options,.facts{grid-template-columns:1fr}footer{flex-direction:column}}@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
     </style><ha-card>${content}</ha-card>`;
